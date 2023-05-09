@@ -4,9 +4,18 @@ inside_main = False
 main_expression = ''
 errors = 0
 
+def reposition_file_pointer(file, line):
+    # Get the current position of the file pointer
+    pos = file.tell()
+    # Subtract the length of the current line (including the newline character) to move to the previous line
+    prev_pos = pos - len(line)
+    # Move the file pointer to the new position
+    file.seek(prev_pos)
+
 def create_new_c_file():
     file = open('Cprogram.c', 'r')
     new_file = open('Cprogram_inline.c', 'w')
+    creating_new_file = True
 
     # Read the first line
     line = file.readline()
@@ -15,17 +24,22 @@ def create_new_c_file():
 
     while line:
 
+
         if re.match(r'^(\w+)+\s+(\w+)?\s*\(?\s*((?:(\w*)?\s*(\w*)?,\s*)*(\w+)?\s+(\w*)?)\s*\)?\s*{?$', line.strip()):
             
             block_expression += line.rstrip()
 
             # Keep reading lines until we find the end of the function block
-            while not re.match(r'\s*\breturn\b', line.strip()):
+            while not check_regex(line.rstrip(), creating_new_file):
                 line = file.readline()
                 block_expression += line.rstrip()
 
             new_file.write(block_expression)
             block_expression = ''
+
+        elif line.strip() == '}':
+            reposition_file_pointer(new_file, line.strip())
+            new_file.write('}\n')
 
         else:
             if line.strip():
@@ -41,7 +55,7 @@ def read_next_line(file):
     line = file.readline() ## Read the next line
     return line
 
-def check_regex(line):
+def check_regex(line, creating_new_file):
 
     global inside_main
     global main_expression
@@ -56,16 +70,18 @@ def check_regex(line):
 
     ## include
     if re.match(r'^#?include(.*)$', line):
-        if not re.match(includePattern, line):
+        if not re.match(includePattern, line) and not creating_new_file:
             print(f'ERROR: {line}')
             errors += 1
+        return True
     
     ## functions that return something
     elif re.match(r'^(\w+)?\s+(\w+)?\s*\(?\s*((?:(\w+)?\s+\w*,\s*)*((\w+))?\s+(\w*))?\s*\)?\s*(\{)?(\s*.*\s*return\s+((\w+(?:\s*[\+\-\/\*]\s*\w+)*)|(\(\w+(?:\s*[\+\-\/\*]\s*\w+)*)\));?\s*.*\s*}?)?$', line):
         match = re.match(returnFunctionPattern, line)
-        if not match:
+        if not match and not creating_new_file:
             print(f'ERROR: {line}')
             errors += 1
+        return True
 
     ## main function
     elif re.match (r"^int\s+main\s*\(\s*void\s*\)\s*{?$", line):
@@ -76,32 +92,36 @@ def check_regex(line):
     ## int a = 10
     elif re.match(r"^\w+\s+\w+\s*(\=)?\s*\w+(?:\s*[\+\-\/\*]\s*\w+)*\;?$", line):
         match = re.match(intPattern, line)
-        if not match:
+        if not match and not creating_new_file:
             print(f'ERROR: {line}')
             errors += 1
+        return True
         
     # int a = somar(a, b)
     elif re.match(r'^(\w*)?\s*\w+\s+(\=)?\s+(\w+)?\s*\(?\s*((?:\w+\s*,\s*)*\w+)\s*\)?;?$', line):
         match = re.match(funcVariableAssignmentPattern, line)
-        if not match:
+        if not match and not creating_new_file:
             print(f'ERROR: {line}')
             errors += 1
+        return True
         
     ## scanf
     elif re.match(r'^s+(.*)$', line): 
         match = re.match(scanfPattern, line)
-        if not match:
+        if not match and not creating_new_file:
             print(f'ERROR: {line}')
             errors += 1
+        return True
 
     ## prinf
     elif re.match(r'^p+(.*)$', line):
         match = re.match(printfPattern, line)
-        if not match:
+        if not match and not creating_new_file:
             print(f'ERROR: {line}')
             errors += 1
+        return True
         
-    elif not re.match(r'^return+s*.', line) and not re.match(r'}', line):
+    elif not re.match(r'^return+s*.', line) and not creating_new_file:
         print(f'ERROR: {line}')
 
         
@@ -115,6 +135,7 @@ def syntax_analysis():
     global inside_main
     global main_expression
     global errors
+    creating_new_file = False
     
     with open('Cprogram_inline.c', 'r') as file:
 
@@ -128,13 +149,13 @@ def syntax_analysis():
             ## outside the main function
             while not inside_main:
 
-                check_regex(line.strip())
+                check_regex(line.strip(), creating_new_file)
                 line = read_next_line(file)
                 
             ## inside the main function
             if inside_main:
                 main_expression += line.strip()
-                check_regex(line.strip())
+                check_regex(line.strip(), creating_new_file)
 
             line = read_next_line(file)
 
