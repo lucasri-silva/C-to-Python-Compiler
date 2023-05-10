@@ -1,10 +1,10 @@
 #include <stdio.h>
 
 int somar (int a, int b) {
-  return (a+b);
+  return a;
 }
 
-int subtrair (int a, int b) {
+int subtrair () {
   return (a-b);
 }
 
@@ -23,7 +23,7 @@ int main(void) {
   scanf("%d",&b);
   int c = somar(a,b);
   int d = subtrair(a,b);
-  int e = multiplicar(a,b);
+  int e = multiplicar();
   int f = dividir(a,b);
   printf("%d\n",a);
   printf("%d\n",d);
