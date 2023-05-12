@@ -8,7 +8,7 @@
 8: {
 9: return (a-b);
 10: }
-12: int multiplicar (int a, int b) 
+12: int multiplicar (int a, int b 
 12: {
 13: return (a*b);
 14: }
@@ -16,7 +16,7 @@
 16: {
 17: a = b + 10;
 18: }
-20: int main() 
+20: int main(void) 
 20: {
 21: int a = 10;
 22: b = 2;

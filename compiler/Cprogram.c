@@ -9,7 +9,7 @@ int subtrair (int a,) {
   return (a-b);
 }
 
-int multiplicar (int a, int b) {
+int multiplicar (int a, int b {
   return (a*b);
 }
 
@@ -17,7 +17,7 @@ void dividir (int b) {
   a = b + 10;
 }
 
-int main() {
+int main(void) {
   int a = 10;
   b = 2;
   scaf("%d",&a);

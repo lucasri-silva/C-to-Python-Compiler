@@ -55,9 +55,6 @@ def check_regex(line):
     ## ignores the line number :
     line_wn = line[3:].strip()
 
-    # print(f'line_wn atual {line_wn}')
-    # print(to_match)
-
     ## to match
     if to_match and re.match(to_match[0], line_wn):
         to_match.remove(to_match[0])
@@ -112,7 +109,7 @@ def check_regex(line):
     ## ERRORS
     else:
         # functions that return something
-        if re.match(r'^(\w+)?\s+(\w+)?\s*\(((\w+)?\s*\,*\s*)*\)$', line_wn):
+        if re.match(r'^(\w+)?\s+(\w+)?\s*\(?((\w+)?\s*\,*\s*)*\)?$', line_wn):
             errors.append(line)
             regex = r'^\s*return\s+.+\s*;$'
             to_match.append('{')
@@ -125,15 +122,15 @@ def check_regex(line):
             errors.append(line)
         
         ## int a = somar(a, b)
-        elif re.match(r'^(\w*)?\s*\w+\s+(\=)?\s+(\w+)?\s*\(?\s*((?:\w+\s*,\s*)*\w+)\s*\)?;?$', line_wn):
+        elif re.match(r'^(\w*)?\s*\w+\s+(\=)?\s+(\w+)?\s*\(?\s*((?:(\w+)?\s*,\s*)*(\w+)?)\s*\)?;?$', line_wn):
             errors.append(line)
 
-        ## prinf
-        elif re.match(r'^p+(.*)$', line_wn):
+        ## printf
+        elif re.match(r'^pr+(.*)$', line_wn):
             errors.append(line)
 
         ## scanf
-        elif re.match(r'^s+(.*)$', line_wn):
+        elif re.match(r'^sc+(.*)$', line_wn):
             errors.append(line)
 
         ## include
@@ -143,19 +140,19 @@ def check_regex(line):
         ## to_match[0] nao deu match, logo tudo aquilo que esta no vetor to_match antes da expressao
         ## atual para dar match é dado como erro
         else:
+            matched = False
             for exp in to_match:
 
                 if line_wn[:-1] in to_match[0]:
                     print(f'matched {line} {to_match}')
                     to_match.remove(to_match[0])
+                    matched = True
                     break
 
                 else:
-                    print(to_match)
-                    print(line)
                     errors.append(line)
                     to_match.remove(exp)
-
+            
     return
 
 
@@ -184,7 +181,7 @@ def syntax_analysis():
             line = file.readline()
 
     file.close()
-    if to_match: print(to_match)
+    # if to_match: print(to_match)
     if errors: print_errors()
 
     return 1 if num_errors else 0
