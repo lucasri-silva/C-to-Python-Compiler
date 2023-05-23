@@ -4,7 +4,6 @@ num_errors = 0
 errors = []
 to_match = []
 
-
 def create_new_c_file():
     file = open('Cprogram.c', 'r')
     new_file = open('Cprogram_modified.c', 'w')
