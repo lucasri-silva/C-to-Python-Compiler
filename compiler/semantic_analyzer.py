@@ -1,6 +1,8 @@
 import re
 
 linhas_tratadas = []
+errors = []
+tokens = ['return','scanf']
 
 codigo_fonte = '''
 #include <stdio.h>>
@@ -28,7 +30,7 @@ int main(void) {
   scaf("%d",&a);
   scanf("%d",&b);
   int c = somar(a,b);
-  int d = subtrair(a,b);
+  float d = subtrair(a,b);
   int e = multiplicar(a,b);
   int f = dividir(a,);
   printf("%d\n",a);
@@ -39,72 +41,59 @@ int main(void) {
   }
 '''
 
+# def semantic_analysis():
+#     linhas_tratadas = codigo_fonte.split('\n')
+#     padrao_funcao = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{'
+#     funcoes = re.findall(padrao_funcao, codigo_fonte)
+#     funcoes_dict = {nome: tipo for tipo, nome in funcoes}
+
+#     padrao_funcao_var = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{([^}]*)}'
+#     funcoes = re.findall(padrao_funcao_var, codigo_fonte)
+#     variaveis_retornos = {}
+#     for tipo, nome, corpo in funcoes:
+#         padrao_variavel = r'\b{}\b'.format(nome)
+#         variaveis = re.findall(padrao_variavel, corpo)
+#         variaveis_retornos[nome] = (tipo, variaveis)
+
+#     print("\nEncontra erros semânticos no código: ")
+#     cont=0
+#     funcoes = re.findall(padrao_funcao_var, codigo_fonte)
+#     for tipo, nome, corpo in funcoes:
+#         padrao_variavel = r'(\w+)\s+(\w+)\s*;'
+#         variaveis = re.findall(padrao_variavel, corpo)
+#         for var_tipo, var_nome in variaveis:
+#             if var_tipo != tipo:
+#                 if (nome == 'main'):
+#                     print("")
+#                 else: 
+#                     cont+=1
+#                     print(f"A variável '{var_nome}' dentro da função '{nome}' retorna um valor de tipo diferente ({var_tipo} em vez de {tipo}).")
+
+
+#     if cont == 0:
+#         print("->não encontramos erros semánticos")
+
 def semantic_analysis():
+    print("Encontrando erros semânticos no código:")
 
-    print("Analisador SemÂntico!")
-
-    print("\n\nLeitura e tratamento do código em C")
-    with open('Cprogram.c', 'r') as arquivo:
-        for linha in arquivo:
-            linha_sem_espacos = linha.strip()
-            linhas_tratadas.append(linha_sem_espacos)   
-            print(linha_sem_espacos)
-
-    print("\n\nLinhas armazenadas em uma lista")
-    print(linhas_tratadas)
-
-    print("\n\nRegex do padrão de função: (\w+)\s+(\w+)\s*\([^)]*\)\s*{")
-    # padrao_funcao = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{'
-    print("\n\nRegex do padrão de include: #include\s+(<\w+\.h>|'[\w\.]+' ")
-    # padrao_include = r'#include\s+(<\w+\.h>|"[\w\.]+")'
-
-    print("\n\nFunções e seus retornos:")
+    # Verificar erros de declaração de função
     padrao_funcao = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{'
     funcoes = re.findall(padrao_funcao, codigo_fonte)
-    funcoes_dict = {nome: tipo for tipo, nome in funcoes}
-    print(funcoes_dict)
+    for tipo, nome in funcoes:
+        if tipo not in ['void', 'int', 'float', 'double', 'char']:
+            print(f"Erro semântico: Tipo de retorno inválido na função '{nome}'.")
 
-    print("\n\nVariáveis e seus retornos:")
-    padrao_funcao_var = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{([^}]*)}'
-    funcoes = re.findall(padrao_funcao_var, codigo_fonte)
-    variaveis_retornos = {}
-    for tipo, nome, corpo in funcoes:
-        padrao_variavel = r'\b{}\b'.format(nome)
-        variaveis = re.findall(padrao_variavel, corpo)
-        variaveis_retornos[nome] = (tipo, variaveis)
+    # Verificar erros de declaração de variáveis
+    padrao_variavel = r'(\w+)\s+(\w+)\s*[,;=]'
+    variaveis = re.findall(padrao_variavel, codigo_fonte)
+    for tipo, nome in variaveis:
+        if tipo not in ['void', 'int', 'float', 'double', 'char']:
+            print(f"Erro semântico: Tipo de variável inválido na declaração de '{nome}'.")
 
-    print(variaveis_retornos)
-
-    print("\n\nEncontra erros semânticos no código: ")
-    # padrao_funcao_var2 = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{([^}]*)}'
-    funcoes = re.findall(padrao_funcao_var, codigo_fonte)
-    for tipo, nome, corpo in funcoes:
-        padrao_variavel = r'(\w+)\s+(\w+)\s*;'
-        variaveis = re.findall(padrao_variavel, corpo)
-        for var_tipo, var_nome in variaveis:
-            if var_tipo != tipo:
-                print(f"A variável '{var_nome}' dentro da função '{nome}' retorna um valor de tipo diferente ({var_tipo} em vez de {tipo}).")
-
-    print("\n\nEncontra erros de escopo no código: ")
-    padrao_chave_abertura = r'{'
-    padrao_chave_fechamento = r'}'
-    escopos = []
-    posicoes_chaves = []
-    for match in re.finditer(padrao_chave_abertura, codigo_fonte):
-        posicoes_chaves.append((match.start(), 'abertura'))
-    for match in re.finditer(padrao_chave_fechamento, codigo_fonte):
-        posicoes_chaves.append((match.start(), 'fechamento'))
-    posicoes_chaves.sort()
-    for posicao, tipo in posicoes_chaves:
-        if tipo == 'abertura':
-            escopos.append(posicao)
-        else:
-            if len(escopos) > 0:
-                escopos.pop()
-            else:
-                print("Erro de escopo: chave de fechamento sem abertura correspondente.")
-
-    if len(escopos) > 0:
-        print("Erro de escopo: chave de abertura sem fechamento correspondente.")
-
-    print("\n\nFim\n\n")
+    # Verificar erros de chamadas de função
+    padrao_chamada_funcao = r'(\w+)\s*\([^)]*\);'
+    chamadas_funcao = re.findall(padrao_chamada_funcao, codigo_fonte)
+    for nome in chamadas_funcao:
+        if nome not in ['printf', 'scanf']:
+            if nome not in [funcao[1] for funcao in funcoes]:
+                print(f"Erro semântico: Chamada para função '{nome}' não declarada.")
