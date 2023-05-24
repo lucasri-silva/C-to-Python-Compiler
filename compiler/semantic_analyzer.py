@@ -69,10 +69,6 @@ int main(void) {
 #                     cont+=1
 #                     print(f"A variável '{var_nome}' dentro da função '{nome}' retorna um valor de tipo diferente ({var_tipo} em vez de {tipo}).")
 
-
-#     if cont == 0:
-#         print("->não encontramos erros semánticos")
-
 def semantic_analysis():
     print("Encontrando erros semânticos no código:")
 
@@ -96,4 +92,5 @@ def semantic_analysis():
     for nome in chamadas_funcao:
         if nome not in ['printf', 'scanf']:
             if nome not in [funcao[1] for funcao in funcoes]:
-                print(f"Erro semântico: Chamada para função '{nome}' não declarada.")
+                if(nome != 'return'):
+                    print(f"Erro semântico: Chamada para função '{nome}' não declarada.")
