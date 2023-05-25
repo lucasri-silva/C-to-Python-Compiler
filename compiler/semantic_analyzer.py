@@ -7,7 +7,7 @@ tokens = ['return','scanf']
 codigo_fonte = '''
 #include <stdio.h>>
 
-int somar (int a, int b) {
+int somar (int a, float b) {
   int x = 10
   return (a+b)
 }
@@ -41,34 +41,6 @@ int main(void) {
   }
 '''
 
-# def semantic_analysis():
-#     linhas_tratadas = codigo_fonte.split('\n')
-#     padrao_funcao = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{'
-#     funcoes = re.findall(padrao_funcao, codigo_fonte)
-#     funcoes_dict = {nome: tipo for tipo, nome in funcoes}
-
-#     padrao_funcao_var = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{([^}]*)}'
-#     funcoes = re.findall(padrao_funcao_var, codigo_fonte)
-#     variaveis_retornos = {}
-#     for tipo, nome, corpo in funcoes:
-#         padrao_variavel = r'\b{}\b'.format(nome)
-#         variaveis = re.findall(padrao_variavel, corpo)
-#         variaveis_retornos[nome] = (tipo, variaveis)
-
-#     print("\nEncontra erros semânticos no código: ")
-#     cont=0
-#     funcoes = re.findall(padrao_funcao_var, codigo_fonte)
-#     for tipo, nome, corpo in funcoes:
-#         padrao_variavel = r'(\w+)\s+(\w+)\s*;'
-#         variaveis = re.findall(padrao_variavel, corpo)
-#         for var_tipo, var_nome in variaveis:
-#             if var_tipo != tipo:
-#                 if (nome == 'main'):
-#                     print("")
-#                 else: 
-#                     cont+=1
-#                     print(f"A variável '{var_nome}' dentro da função '{nome}' retorna um valor de tipo diferente ({var_tipo} em vez de {tipo}).")
-
 def semantic_analysis():
     print("Encontrando erros semânticos no código:")
 
@@ -80,11 +52,33 @@ def semantic_analysis():
             print(f"Erro semântico: Tipo de retorno inválido na função '{nome}'.")
 
     # Verificar erros de declaração de variáveis
-    padrao_variavel = r'(\w+)\s+(\w+)\s*[,;=]'
+    padrao_variavel = r'(\w+)\s+(\w+)\s*[,;=)]'
     variaveis = re.findall(padrao_variavel, codigo_fonte)
     for tipo, nome in variaveis:
-        if tipo not in ['void', 'int', 'float', 'double', 'char']:
+        if tipo not in ['void', 'int', 'float', 'double', 'char'] and nome != '0':
             print(f"Erro semântico: Tipo de variável inválido na declaração de '{nome}'.")
+
+    # Verificar erros de variáveis nos parâmetros de função
+    padrao_parametro = r'\(\s*(\w+)\s+(\w+)\s*\)'
+    parametros_funcao = re.findall(padrao_parametro, codigo_fonte)
+    for tipo, nome in parametros_funcao:
+        if tipo not in ['void', 'int', 'float', 'double', 'char'] and nome != '0':
+            print(f"Erro semântico: Tipo de variável inválido no parâmetro da função '{nome}'.")
+
+    # Verificar erros de tipo de variáveis dentro das funções
+    for tipo, nome in funcoes:
+        padrao_variavel_funcao = fr'{tipo}\s+(\w+)'
+        variaveis_funcao = re.findall(padrao_variavel_funcao, codigo_fonte)
+        for nome_variavel in variaveis_funcao:
+          if nome_variavel != variaveis_funcao:
+            print(nome_variavel, nome)
+            print(f"Erro semântico: Tipo de variável '{nome_variavel}' dentro da função '{nome}' não corresponde ao tipo da função.")
+
+    # padrao_variavel = r'(\w+)\s+(\w+)\s*;'
+    # variaveis = re.findall(padrao_variavel, codigo_fonte)
+    # for tipo, nome in variaveis:
+    #     if tipo == 'int':
+    #         print(f"Variável 'int {nome}' encontrada.")
 
     # Verificar erros de chamadas de função
     padrao_chamada_funcao = r'(\w+)\s*\([^)]*\);'
@@ -92,5 +86,19 @@ def semantic_analysis():
     for nome in chamadas_funcao:
         if nome not in ['printf', 'scanf']:
             if nome not in [funcao[1] for funcao in funcoes]:
-                if(nome != 'return'):
+                if nome != 'return':
                     print(f"Erro semântico: Chamada para função '{nome}' não declarada.")
+
+    print(funcoes)
+
+semantic_analysis()
+
+
+# def extract_variables():
+#     padrao_variavel = r'(\w+)\s+(\w+)\s*;'
+#     variaveis = re.findall(padrao_variavel, codigo_fonte)
+#     for tipo, nome in variaveis:
+#         if tipo == 'int':
+#             print(f"Variável 'int {nome}' encontrada.")
+
+# extract_variables()
