@@ -47,9 +47,63 @@ def semantic_analysis():
     # Verificar erros de declaração de função
     padrao_funcao = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{'
     funcoes = re.findall(padrao_funcao, codigo_fonte)
+
+    # Armazenar as funções e seus tipos em uma lista
+    lista_funcoes = []
+    for tipo, nome in funcoes:
+        lista_funcoes.append((tipo, nome))
+
+        if tipo not in ['void', 'int', 'float', 'double', 'char']:
+            print(f"Erro semântico: Tipo de retorno inválido na função '{nome}'.")
+
+    print(lista_funcoes)
+
+    # Verificar erros de declaração de variáveis
+    padrao_variavel = r'(\w+)\s+(\w+)\s*[,;=)]'
+    variaveis = re.findall(padrao_variavel, codigo_fonte)
+
+    # Armazenar as variáveis em uma lista
+    lista_variaveis = []
+    for tipo, nome in variaveis:
+        lista_variaveis.append((tipo, nome))
+
+        if tipo not in ['void', 'int', 'float', 'double', 'char'] and nome != '0':
+            print(f"Erro semântico: Tipo de variável inválido na declaração de '{nome}'.")
+
+    print(lista_variaveis)
+    conjunto_variaveis = set(lista_variaveis)
+    print(conjunto_variaveis)
+
+    # Criar um dicionário para associar as variáveis às funções
+    funcoes_variaveis = {}
+
+    for tipo, nome in funcoes:
+        variaveis_funcao = []
+        padrao_variavel_funcao = fr'{tipo}\s+(\w+)'
+        variaveis = re.findall(padrao_variavel_funcao, codigo_fonte)
+
+        for nome_variavel in variaveis:
+            variaveis_funcao.append(nome_variavel)
+
+        funcoes_variaveis[nome] = variaveis_funcao
+
+        if tipo not in ['void', 'int', 'float', 'double', 'char']:
+            print(f"Erro semântico: Tipo de retorno inválido na função '{nome}'.")
+
+    # Imprimir as associações entre as funções e as variáveis
+    for nome_funcao, variaveis_funcao in funcoes_variaveis.items():
+        print(f"Função '{nome_funcao}':")
+        for variavel in variaveis_funcao:
+            print(f"- Variável '{variavel}'")
+
+    # Verificar erros de declaração de função
+    padrao_funcao = r'(\w+)\s+(\w+)\s*\([^)]*\)\s*{'
+    funcoes = re.findall(padrao_funcao, codigo_fonte)
     for tipo, nome in funcoes:
         if tipo not in ['void', 'int', 'float', 'double', 'char']:
             print(f"Erro semântico: Tipo de retorno inválido na função '{nome}'.")
+
+
 
     # Verificar erros de declaração de variáveis
     padrao_variavel = r'(\w+)\s+(\w+)\s*[,;=)]'
@@ -72,7 +126,7 @@ def semantic_analysis():
         for nome_variavel in variaveis_funcao:
           if nome_variavel != variaveis_funcao:
             print(nome_variavel, nome)
-            print(f"Erro semântico: Tipo de variável '{nome_variavel}' dentro da função '{nome}' não corresponde ao tipo da função.")
+            # print(f"Erro semântico: Tipo de variável '{nome_variavel}' dentro da função '{nome}' não corresponde ao tipo da função.")
 
     # padrao_variavel = r'(\w+)\s+(\w+)\s*;'
     # variaveis = re.findall(padrao_variavel, codigo_fonte)
