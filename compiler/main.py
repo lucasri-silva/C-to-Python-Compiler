@@ -24,7 +24,7 @@ def main():
     
     print("\n\nAnalisador Semántico")
     semantic_result = semantic_analyzer.semantic_analysis()
-        
+
     # if semantic_result == 1:
     #     print('SYNTAX ERROR')
     #     return 0
