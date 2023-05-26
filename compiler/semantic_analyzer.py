@@ -119,26 +119,40 @@ def semantic_analysis():
         if tipo not in ['void', 'int', 'float', 'double', 'char'] and nome != '0':
             print(f"Erro semântico: Tipo de variável inválido no parâmetro da função '{nome}'.")
 
-    # Verificar erros de tipo de variáveis dentro das funções
-    for tipo_funcao, nome_funcao in lista_funcoes:
-      for tipo, nome in funcoes:
-          padrao_variavel_funcao = fr'{tipo}\s+(\w+)'
-          variaveis_funcao = re.findall(padrao_variavel_funcao, codigo_fonte)
-          for nome_variavel in variaveis_funcao:
-              tipo_variavel = None
-              for tipo, nome_var in lista_variaveis:
-                  if nome_var == nome_variavel:
-                      tipo_variavel = tipo
-                      if tipo_funcao != tipo_variavel:
-                        # print(nome_funcao)
-                        # print(tipo_funcao, tipo_variavel)
-                        # if(nome_funcao != "main"):
-                          print(f"Erro semântico: O tipo da variável '{nome_variavel}' dentro da função '{nome_funcao}' não corresponde ao tipo da função.")
-                      break
-              # if tipo_variavel and tipo_variavel != tipo:
-              #     print(f"Erro semântico: O tipo da variável '{nome_variavel}' dentro da função '{nome}' não corresponde ao tipo da função.")
+    # Lista para armazenar os erros encontrados
+    erros = []
 
-    # print(conjunto_saida)
+    for tipo_funcao, nome_funcao in lista_funcoes:
+        for tipo, nome in funcoes:
+            padrao_variavel_funcao = fr'{tipo}\s+(\w+)'
+            variaveis_funcao = re.findall(padrao_variavel_funcao, codigo_fonte)
+            for nome_variavel in variaveis_funcao:
+                tipo_variavel = None
+                for tipo, nome_var in lista_variaveis:
+                    if nome_var == nome_variavel:
+                        tipo_variavel = tipo
+                        if tipo_funcao != tipo_variavel:
+                            # Verificar se o erro já foi registrado
+                            erro = (nome_variavel, nome_funcao)
+                            if erro not in erros:
+                                erros.append(erro)
+                                print(f"Erro semântico: O tipo da variável '{nome_variavel}' dentro da função '{nome_funcao}' não corresponde ao tipo da função.")
+                        break
+                    
+    # Encontrar retornos de função
+    padrao_retorno = r'\breturn\b\s*\((.+?)\)'
+    returns = re.findall(padrao_retorno, codigo_fonte, re.MULTILINE | re.DOTALL)
+    for i, retorno in enumerate(returns):
+        tipo_retorno = None
+        for tipo, nome in funcoes:
+            if nome == lista_funcoes[i][1]:
+                tipo_retorno = tipo
+                break
+        if tipo_retorno is not None:
+            tipo_retorno_funcao = tipo_retorno.strip()
+            tipo_retorno_retorno = retorno.strip()
+            if tipo_retorno_funcao != tipo_retorno_retorno:
+                print(f"Erro semântico: O tipo de retorno da função '{lista_funcoes[i][1]}' não corresponde ao tipo esperado.")
 
     # Verificar erros de chamadas de função
     padrao_chamada_funcao = r'(\w+)\s*\([^)]*\);'
