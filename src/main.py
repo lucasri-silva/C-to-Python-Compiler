@@ -11,7 +11,7 @@ def main():
         print('LEXICAL ERROR')
         return 0
     else:
-        print("Fim")
+        print("No lexical errors")
     
     print("\n\nAnalisador Sintático")
     syntax_result = syntax_analyzer.syntax_analysis()
@@ -20,16 +20,17 @@ def main():
         print('SYNTAX ERROR')
         return 0
     else:
-        print("Fim")
+        print("No syntax errors")
     
     print("\n\nAnalisador Semántico")
     semantic_result = semantic_analyzer.semantic_analysis()
 
-    # if semantic_result == 1:
-    #     print('SYNTAX ERROR')
-    #     return 0
+    if semantic_result == 1:
+        print('SEMANTIC ERROR')
+        return 0
+    else:
+        print("No semantic errors")
 
-    print("Fim")
 
 if __name__ == "__main__":
     main()    

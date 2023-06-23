@@ -1,4 +1,5 @@
 import re
+import semantic_analyzer
 
 num_errors = 0
 errors = []
@@ -17,6 +18,10 @@ def create_new_c_file():
         line_num += 1
 
         if line.strip():
+
+            if line.strip()[:2] == '//':
+                line = file.readline()
+                continue
 
             if line.strip()[-1] == '{':
                 new_file.write(str(line_num) + ': ' + line.strip()[:-1])
@@ -45,10 +50,10 @@ def check_regex(line):
 
     mainFuncionPattern = r"\w+\s*main\s*\(\s*void\s*\)\s*$"
     includePattern = r'^#include\s+((<[^>]+>)|("[^"]+"))$'
-    variablePattern = r"^((\w+)?\s*\w+)\s*\=+\s*(\w+)(?:\s*[\+\-\/\*]\s*(\w+))*\;$"
-    scanfPattern = r'^scanf\("%([d|ld|f|lf|c|u|lu|x|o])+",&(\w+)\);$'
-    printfPattern = r'^printf\("%([c|d|e|f|g|i|o|p|s|u|x])(\\n)?",(\w+)\);$'
-    funcVariableAssignmentPattern = r'^(\w*\s*\w+)+\s*\=+\s*\w+\s*\(\s*(\w+\s*(?:,\s*\w+)*)?\s*\);$'
+    variablePattern = r"^((?:\w+|\"[^\"]*\"|\'[^\']*\')?\s*\w+)\s*(?:\=+\s*(\w+|\"[^\"]*\"|\'[^\']*\'))?(?:\s*[\+\-\/\*]\s*(\w+|\"[^\"]*\"|\'[^\']*\'))*\;$"
+    scanfPattern = r'^(scanf)\("%([d|ld|f|lf|c|u|lu|x|o])+",&(\w+)\);$'
+    printfPattern = r'^(printf)\("%([c|d|e|f|g|i|o|p|s|u|x])(\\n)?",(\w+)\);$'
+    funcVariableAssignmentPattern = r'^(\w*\s*\w+)+\s*\=+\s*(\w+)\s*\(\s*(\w+\s*(?:,\s*\w+)*)?\s*\);$'
     returnFunctionPattern = r'^(\w+\s+\w+)\s*\(\s*((?:\w+\s+\w+\,\s*)*\w+\s+\w+)?\s*\)+\s*$'
 
     ## ignores the line number :
@@ -56,6 +61,8 @@ def check_regex(line):
 
     ## to match
     if to_match and re.match(to_match[0], line_wn):
+        match = re.match(to_match[0], line_wn)
+        semantic_analyzer.addReturn(match)
         to_match.remove(to_match[0])
         return
 
@@ -66,11 +73,16 @@ def check_regex(line):
     ## functions that return something
     elif re.match(returnFunctionPattern, line_wn):
         
-        if re.match(r'^void+\s+(\w+)?\s*\(((\w+)?\s*\,*\s*)*\)$', line_wn):
+        if re.match(r'^(void+\s+\w+)\s*\(\s*((?:\w+\s+\w+\,\s*)*\w+\s+\w+)?\s*\)+\s$', line_wn):
+            match = re.match(r'^(void+\s+\w+)\s*\(\s*((?:\w+\s+\w+\,\s*)*\w+\s+\w+)?\s*\)+\s*$', line_wn)
+            
+            semantic_analyzer.addFunction(match)
             to_match.append('{')
             to_match.append('}')
             return
-        
+
+        match = re.match(returnFunctionPattern, line_wn)
+        semantic_analyzer.addFunction(match)
         regex = r'^\s*return\s+.+\s*;$'
         to_match.append('{')
         to_match.append(regex)
@@ -79,30 +91,44 @@ def check_regex(line):
 
     ## main function
     elif re.match (mainFuncionPattern, line_wn):
+
         if re.match (r"^int\s+main\s*\(\s*void\s*\)\s*$", line_wn):
+            match = re.match(r"^int\s+main\s*\(\s*void\s*\)\s*$", line_wn)
+            semantic_analyzer.addMain(match)
             regex = r'^\s*return\s+.+\s*;$'
             to_match.append('{')
             to_match.append(regex)
             to_match.append('}')
             return
+
+        match = re.match(mainFuncionPattern, line_wn)
+        semantic_analyzer.addMain(match)
         to_match.append('{')
         to_match.append('}')
         return
 
     ## int a = 10
     elif re.match(variablePattern, line_wn):
+        match = re.match(variablePattern, line_wn)
+        semantic_analyzer.addVariable(match)
         return
 
     ## int a = somar(a, b)
     elif re.match(funcVariableAssignmentPattern, line_wn):
+        match = re.match(funcVariableAssignmentPattern, line_wn)
+        semantic_analyzer.addFunctionVariableAssignment(match)
         return
 
     ## scanf
     elif re.match(scanfPattern, line_wn):
+        match = re.match(scanfPattern, line_wn)
+        semantic_analyzer.addIO(match)
         return
 
     ## prinf
     elif re.match(printfPattern, line_wn):
+        match = re.match(printfPattern, line_wn)
+        semantic_analyzer.addIO(match)
         return
 
     ## ERRORS
@@ -171,16 +197,12 @@ def syntax_analysis():
 
     with open('Cprogram_modified.c', 'r') as file:
 
-        # Read the first line
         line = file.readline()
-
         while line:
-
             check_regex(line.strip())
             line = file.readline()
 
     file.close()
-    # if to_match: print(to_match)
     if errors: print_errors()
 
     return 1 if num_errors else 0
