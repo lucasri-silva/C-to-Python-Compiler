@@ -1,135 +1,138 @@
 import re
 import semantic_analyzer
 
-num_errors = 0
 errors = []
 to_match = []
+conditionalBlock = False
 
-def create_new_c_file():
-    file = open('Cprogram.c', 'r')
-    new_file = open('Cprogram_modified.c', 'w')
-
-    line_num = 0
-
-    # Read the first line
-    line = file.readline()
-
-    while line:
-        line_num += 1
-
-        if line.strip():
-
-            if line.strip()[:2] == '//':
-                line = file.readline()
-                continue
-
-            if line.strip()[-1] == '{':
-                new_file.write(str(line_num) + ': ' + line.strip()[:-1])
-                new_file.write('\n' + str(line_num) + ': {\n')
-                line = file.readline()
-                continue
-
-            if len(line.strip()) > 1 and line.strip()[-1] == '}':
-                new_file.write(str(line_num) + ': ' + line.strip()[:-1])
-                new_file.write('\n' + str(line_num) + ': }\n')
-                line = file.readline()
-                continue
-
-            new_file.write(str(line_num) + ': ' + line.strip() + '\n')
-        line = file.readline()
-
-    file.close()
-    new_file.close()
-
+def reset():
+    global errors
+    global to_match
+    global conditionalBlock
+    errors = []
+    to_match = []
+    conditionalBlock = []
 
 def check_regex(line):
 
     global num_errors
     global errors
     global to_match
+    global conditionalBlock
 
-    mainFuncionPattern = r"\w+\s*main\s*\(\s*void\s*\)\s*$"
+    mainFuncionPattern = r'int main\((.*?)\)'
     includePattern = r'^#include\s+((<[^>]+>)|("[^"]+"))$'
-    variablePattern = r"^((?:\w+|\"[^\"]*\"|\'[^\']*\')?\s*\w+)\s*(?:\=+\s*(\w+|\"[^\"]*\"|\'[^\']*\'))?(?:\s*[\+\-\/\*]\s*(\w+|\"[^\"]*\"|\'[^\']*\'))*\;$"
-    scanfPattern = r'^(scanf)\("%([d|ld|f|lf|c|u|lu|x|o])+",&(\w+)\);$'
-    printfPattern = r'^(printf)\("%([c|d|e|f|g|i|o|p|s|u|x])(\\n)?",(\w+)\);$'
+    variableDeclarationPattern = r"(?:\b(?:int|float)\s+)(?:\w+\b(?:,\s*\w+\b)*)\s*;"
+    variableDefinitionPattern = r"^(.*?)\s*=\s*(.*?)\s*;$"
+    scanfPattern = r'^(scanf)\("%([f|i])+"\s*,\s*&(\w+)\);$'
+    printfPattern = r'^printf\s*\("%([c|d|e|f|g|i|o|p|s|u|x])(\\n)?",(\w+)\);$'
     funcVariableAssignmentPattern = r'^(\w*\s*\w+)+\s*\=+\s*(\w+)\s*\(\s*(\w+\s*(?:,\s*\w+)*)?\s*\);$'
     returnFunctionPattern = r'^(\w+\s+\w+)\s*\(\s*((?:\w+\s+\w+\,\s*)*\w+\s+\w+)?\s*\)+\s*$'
+    returnStatementPattern = r'^return\s+.+;$'
+    ifStatementPattern = r"if\s*\((.*?)\s*(?:>|<)\s*(.*?)\)\s*"
+    elseStatementPattern = r'else\s*'
 
     ## ignores the line number :
     line_wn = line[3:].strip()
+    line_num = line.split(':')[0]
 
     ## to match
-    if to_match and re.match(to_match[0], line_wn):
-        match = re.match(to_match[0], line_wn)
-        semantic_analyzer.addReturn(match)
-        to_match.remove(to_match[0])
+    if to_match and re.match(to_match[-1], line_wn):
+        match = re.match(to_match[-1], line_wn)
+        if 'return' in to_match[-1]:
+            semantic_analyzer.addReturn(match)
+        elif conditionalBlock and to_match[-1] == '}':
+            semantic_analyzer.endOfConditional()
+            conditionalBlock = False
+        to_match.pop()
         return
 
-    ## include
     elif re.match(includePattern, line_wn):
         return
 
-    ## functions that return something
     elif re.match(returnFunctionPattern, line_wn):
         
         if re.match(r'^(void+\s+\w+)\s*\(\s*((?:\w+\s+\w+\,\s*)*\w+\s+\w+)?\s*\)+\s$', line_wn):
             match = re.match(r'^(void+\s+\w+)\s*\(\s*((?:\w+\s+\w+\,\s*)*\w+\s+\w+)?\s*\)+\s*$', line_wn)
             
             semantic_analyzer.addFunction(match)
-            to_match.append('{')
             to_match.append('}')
+            to_match.append('{')
             return
 
         match = re.match(returnFunctionPattern, line_wn)
         semantic_analyzer.addFunction(match)
-        regex = r'^\s*return\s+.+\s*;$'
-        to_match.append('{')
-        to_match.append(regex)
         to_match.append('}')
+        regex = r'^\s*return\s+.+\s*;$'
+        to_match.append(regex)
+        to_match.append('{')
         return
 
-    ## main function
+    elif re.match(returnStatementPattern, line_wn):
+        match = re.match(returnStatementPattern, line_wn)
+        semantic_analyzer.addReturn(match)
+        return
+
     elif re.match (mainFuncionPattern, line_wn):
 
-        if re.match (r"^int\s+main\s*\(\s*void\s*\)\s*$", line_wn):
-            match = re.match(r"^int\s+main\s*\(\s*void\s*\)\s*$", line_wn)
+        if re.match (r'int main\((.*?)\)', line_wn):
+            match = re.match(r'int main\((.*?)\)', line_wn)
             semantic_analyzer.addMain(match)
+            to_match.append('}')
             regex = r'^\s*return\s+.+\s*;$'
             to_match.append('{')
             to_match.append(regex)
-            to_match.append('}')
+            semantic_analyzer.addReturn(match)
             return
 
         match = re.match(mainFuncionPattern, line_wn)
         semantic_analyzer.addMain(match)
-        to_match.append('{')
         to_match.append('}')
+        regex = r'^\s*return\s+.+\s*;$'
+        to_match.append('{')
+        to_match.append(regex)
         return
 
-    ## int a = 10
-    elif re.match(variablePattern, line_wn):
-        match = re.match(variablePattern, line_wn)
-        semantic_analyzer.addVariable(match)
+    elif re.match(variableDeclarationPattern, line_wn):
+        match = re.match(variableDeclarationPattern, line_wn)
+        semantic_analyzer.addVariableDeclaration(match, line_num)
         return
 
-    ## int a = somar(a, b)
+    elif re.match(variableDefinitionPattern, line_wn):
+        match = re.match(variableDefinitionPattern, line_wn)
+        semantic_analyzer.addVariableDefinition(match, line_num)
+        return
+
     elif re.match(funcVariableAssignmentPattern, line_wn):
         match = re.match(funcVariableAssignmentPattern, line_wn)
         semantic_analyzer.addFunctionVariableAssignment(match)
         return
 
-    ## scanf
     elif re.match(scanfPattern, line_wn):
         match = re.match(scanfPattern, line_wn)
-        semantic_analyzer.addIO(match)
+        semantic_analyzer.addIO(match, line_num)
         return
 
-    ## prinf
     elif re.match(printfPattern, line_wn):
         match = re.match(printfPattern, line_wn)
-        semantic_analyzer.addIO(match)
+        semantic_analyzer.addIO(match, line_wn)
         return
+
+    elif re.match(ifStatementPattern, line_wn):
+        match = re.match(ifStatementPattern, line_wn)
+        to_match.append('}')
+        to_match.append('{')
+        semantic_analyzer.addIfStatement(match, line_num)
+        return
+
+    elif re.match(elseStatementPattern, line_wn):
+        match = re.match(elseStatementPattern, line_wn)
+        to_match.append('}')
+        to_match.append('{')
+        conditionalBlock = True
+        semantic_analyzer.addElseStatement(match, line_num)
+        return
+
 
     ## ERRORS
     else:
@@ -168,9 +171,8 @@ def check_regex(line):
             matched = False
             for exp in to_match:
 
-                if line_wn[:-1] in to_match[0]:
-                    print(f'matched {line} {to_match}')
-                    to_match.remove(to_match[0])
+                if line_wn[:-1] in to_match[-1]:
+                    to_match.remove(to_match[-1])
                     matched = True
                     break
 
@@ -191,11 +193,10 @@ def print_errors():
 
 def syntax_analysis():
 
-    create_new_c_file()
     global num_errors
     global errors
 
-    with open('Cprogram_modified.c', 'r') as file:
+    with open('modified.c', 'r') as file:
 
         line = file.readline()
         while line:
@@ -205,4 +206,4 @@ def syntax_analysis():
     file.close()
     if errors: print_errors()
 
-    return 1 if num_errors else 0
+    return 1 if errors else 0
