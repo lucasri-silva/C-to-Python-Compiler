@@ -8,10 +8,6 @@
     <li>Generates readable and well-structured Python code</li>
     <li>Handles input validation to prevent errors during execution</li>
   </ul>
-  <h2>Usage</h2>
-  <p>To use the compiler, simply run the following command:</p>
-  <pre>c2py &lt;input_file.c&gt; &lt;output_file.py&gt;</pre>
-  <p>This command will read the input file, parse the arithmetic expressions, and generate Python code that performs the same calculations. The resulting Python code will be written to the output file.</p>
   <h2>Supported Syntax</h2>
   <p>The calculator compiler supports a subset of the C language syntax that includes:</p>
   <ul>
